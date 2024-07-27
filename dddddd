@@ -1,6 +1,5 @@
 
--- Load Cerberus Library
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jxereas/UI-Libraries/main/cerberus.lua"))()
+
 
 -- Load Fluent UI Library
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -14,8 +13,7 @@ local player = game.Players.LocalPlayer
 local playerName = player.Name
 local playerStates = game:GetService("Workspace").States[playerName]
 
--- Create Cerberus window
-local window = Library.new("Games Anti system bypass ignore this")
+
 
 -- Create Fluent window
 local Window = Fluent:CreateWindow({
