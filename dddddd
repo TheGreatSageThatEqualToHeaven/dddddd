@@ -1,7 +1,3 @@
-
-
-
-
 -- Load Fluent UI Library
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
@@ -13,8 +9,6 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 local player = game.Players.LocalPlayer
 local playerName = player.Name
 local playerStates = game:GetService("Workspace").States[playerName]
-
-
 
 -- Create Fluent window
 local Window = Fluent:CreateWindow({
@@ -30,9 +24,10 @@ local Window = Fluent:CreateWindow({
 -- Tabs for Fluent window
 local Tabs = {
     ["Auto Dodge Legit"] = Window:AddTab({ Title = "Auto Dodge Legit", Icon = "shield" }),
-    ["Misc"] = Window:AddTab({ Title = "Misc", Icon = "cog" }),  -- New tab for Misc
-    Info = Window:AddTab({ Title = "Info", Icon = "info" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+    ["Misc"] = Window:AddTab({ Title = "Misc", Icon = "cog" }),
+    ["Info"] = Window:AddTab({ Title = "Info", Icon = "info" }),
+    ["Settings"] = Window:AddTab({ Title = "Settings", Icon = "settings" }),
+    ["FPS Boost"] = Window:AddTab({ Title = "FPS Boost", Icon = "graph" })  -- New FPS Boost tab
 }
 
 -- Fluent Options
@@ -40,15 +35,15 @@ local Options = Fluent.Options
 
 -- Auto Dodge Variables
 local autoDodgeEnabled = false
-local currentDirection = "Automatic"  -- Set default direction to "Automatic"
+local currentDirection = "Automatic"
 local detectDistance = 10
 local connections = {}
 local isStunned = false
-local dodgeMode = "Automatic"  -- Set default dodge mode to "Automatic"
+local dodgeMode = "Automatic"
 local dodgeCooldown = 0.3
-local dodgeOnceOnDoublePunch = false  -- New variable for the misc toggle
+local dodgeOnceOnDoublePunch = false
 local recentAttacks = {}
-local lastDodgeTime = 0  -- Track last dodge time
+local lastDodgeTime = 0
 
 -- Function to stop auto dodge
 local function stopAutoDodge()
@@ -134,13 +129,12 @@ local function autoDodgeScript()
         local function handlePunch(attackerRoot, clientRoot, dodgeDistance, reactionTime)
             local currentTime = tick()
             if dodgeOnceOnDoublePunch and (currentTime - lastDodgeTime) < 0.5 then
-                -- Avoid dodging more than once within 0.5 seconds of the last dodge
                 return
             end
 
             if not recentAttacks[attackerRoot] or (currentTime - recentAttacks[attackerRoot]) > 0.2 then
                 recentAttacks[attackerRoot] = currentTime
-                lastDodgeTime = currentTime  -- Update last dodge time
+                lastDodgeTime = currentTime
 
                 local dodgeDirection = (clientRoot.Position - attackerRoot.Position).unit * dodgeDistance
                 
@@ -202,7 +196,7 @@ local function autoDodgeScript()
 
                                         if distance <= 10 and (d[1] == "AttackTrail" or d[1] == "StartupHighlight" or d[1] == "UltimateHighlight") then
                                             handlePunch(attackerRoot, clientRoot, dodgeDist, reactionTime)
-                                            wait(dodgeCooldown)  -- Pause for dodge cooldown
+                                            wait(dodgeCooldown)
                                         end
                                     end
                                 end
@@ -285,7 +279,6 @@ local function rejoinGame()
     local Players = game:GetService("Players")
     local function onPlayerRemoving(player)
         if player == Players.LocalPlayer then
-            -- Wait for a bit before attempting to rejoin
             task.wait(5)
             print("Rejoining game...")
             game:GetService("TeleportService"):Teleport(game.PlaceId, Players.LocalPlayer)
@@ -337,7 +330,7 @@ local dodgeMethodOptions = {"Left", "Right", "Forward", "Backward", "Automatic"}
 local DodgeMethodDropdown = Tabs["Auto Dodge Legit"]:AddDropdown("Dodge Method", {
     Title = "Dodge Method",
     Values = dodgeMethodOptions,
-    Default = "Automatic",  -- Set default to "Automatic"
+    Default = "Automatic",
     Multi = false,
     Callback = function(Value)
         currentDirection = Value
@@ -454,3 +447,18 @@ SaveManager:LoadAutoloadConfig()
 if autoDodgeEnabled then
     autoDodgeScript()
 end
+
+-- New FPS Boost tab functionality
+local fpsBoostTab = Tabs["FPS Boost"]
+
+-- Toggle for FPS Boost
+local fpsBoostToggle = fpsBoostTab:AddToggle("FPS Boost", {
+    Title = "Enable FPS Boost",
+    Default = false
+})
+
+fpsBoostToggle:OnChanged(function()
+    if fpsBoostToggle.Value then
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/tentray/afadd/main/ffaf"))()
+    end
+end)
