@@ -1,20 +1,12 @@
-
-
-
-
--- Load Fluent UI Library
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-
 -- Load necessary modules
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
--- Get the player's name
+-- Get player and workspace
 local player = game.Players.LocalPlayer
 local playerName = player.Name
 local playerStates = game:GetService("Workspace").States[playerName]
-
-
 
 -- Create Fluent window
 local Window = Fluent:CreateWindow({
@@ -38,17 +30,103 @@ local Tabs = {
 -- Fluent Options
 local Options = Fluent.Options
 
+-- Add the button above auto dodge and paragraph
+Tabs["Auto Dodge Legit"]:AddButton({
+    Title = "Disable Effects",
+    Description = "for fps boost recommend for mobile user",
+    Callback = function()
+        local ToDisable = {
+            Textures = true,
+            VisualEffects = true,
+            Parts = true,
+            Particles = true,
+            Sky = true
+        }
+
+        local ToEnable = {
+            FullBright = false
+        }
+
+        local Stuff = {}
+
+        for _, v in pairs(game:GetDescendants()) do
+            if ToDisable.Parts and (v:IsA("Part") or v:IsA("Union") or v:IsA("BasePart")) then
+                v.Material = Enum.Material.SmoothPlastic
+                table.insert(Stuff, v)
+            end
+            
+            if ToDisable.Particles and (v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Explosion") or v:IsA("Sparkles") or v:IsA("Fire")) then
+                v.Enabled = false
+                table.insert(Stuff, v)
+            end
+            
+            if ToDisable.VisualEffects and (v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("SunRaysEffect")) then
+                v.Enabled = false
+                table.insert(Stuff, v)
+            end
+            
+            if ToDisable.Textures and (v:IsA("Decal") or v:IsA("Texture")) then
+                v.Texture = ""
+                table.insert(Stuff, v)
+            end
+            
+            if ToDisable.Sky and v:IsA("Sky") then
+                v.Parent = nil
+                table.insert(Stuff, v)
+            end
+        end
+
+        game:GetService("TestService"):Message("Effects Disabler Script : Successfully disabled "..#Stuff.." assets / effects. Settings :")
+
+        for k, v in pairs(ToDisable) do
+            print(k..": "..tostring(v))
+        end
+
+        if ToEnable.FullBright then
+            local Lighting = game:GetService("Lighting")
+            Lighting.FogColor = Color3.fromRGB(255, 255, 255)
+            Lighting.FogEnd = math.huge
+            Lighting.FogStart = math.huge
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.Brightness = 5
+            Lighting.ColorShift_Bottom = Color3.fromRGB(255, 255, 255)
+            Lighting.ColorShift_Top = Color3.fromRGB(255, 255, 255)
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+            Lighting.Outlines = true
+        end
+        
+        Window:Dialog({
+            Title = "Disable Effects",
+            Content = "This is a dialog",
+            Buttons = {
+                {
+                    Title = "Confirm",
+                    Callback = function()
+                        print("Confirmed the dialog.")
+                    end
+                },
+                {
+                    Title = "Cancel",
+                    Callback = function()
+                        print("Cancelled the dialog.")
+                    end
+                }
+            }
+        })
+    end
+})
+
 -- Auto Dodge Variables
 local autoDodgeEnabled = false
-local currentDirection = "Automatic"  -- Set default direction to "Automatic"
+local currentDirection = "Automatic"
 local detectDistance = 10
 local connections = {}
 local isStunned = false
-local dodgeMode = "Automatic"  -- Set default dodge mode to "Automatic"
+local dodgeMode = "Automatic"
 local dodgeCooldown = 0.3
-local dodgeOnceOnDoublePunch = false  -- New variable for the misc toggle
+local dodgeOnceOnDoublePunch = false
 local recentAttacks = {}
-local lastDodgeTime = 0  -- Track last dodge time
+local lastDodgeTime = 0
 
 -- Function to stop auto dodge
 local function stopAutoDodge()
@@ -98,6 +176,9 @@ local function autoDodgeScript()
                     directionVector = Vector3.new(0.9962181448936462, 0, 0.08688679337501526)
                 elseif currentDirection == "Backward" then
                     directionVector = Vector3.new(-0.9962181448936462, 0, -0.08688679337501526)
+                else
+                    warn("Invalid direction:", currentDirection)
+                    return
                 end
             else
                 if currentDirection == "Left" then
@@ -129,18 +210,19 @@ local function autoDodgeScript()
             }
             local Event = game:GetService("ReplicatedStorage").BridgeNet2.dataRemoteEvent
             Event:FireServer(A_1)
+            print("Fired Remote Event with direction:", direction)
         end
 
         local function handlePunch(attackerRoot, clientRoot, dodgeDistance, reactionTime)
             local currentTime = tick()
             if dodgeOnceOnDoublePunch and (currentTime - lastDodgeTime) < 0.5 then
-                -- Avoid dodging more than once within 0.5 seconds of the last dodge
+                print("Dodge skipped due to double punch cooldown")
                 return
             end
 
             if not recentAttacks[attackerRoot] or (currentTime - recentAttacks[attackerRoot]) > 0.2 then
                 recentAttacks[attackerRoot] = currentTime
-                lastDodgeTime = currentTime  -- Update last dodge time
+                lastDodgeTime = currentTime
 
                 local dodgeDirection = (clientRoot.Position - attackerRoot.Position).unit * dodgeDistance
                 
@@ -148,75 +230,69 @@ local function autoDodgeScript()
                     local stamina = Workspace.States[playerName].CharacterData.Stamina.Value
                     if stamina > 0.1 then
                         local occupied = Workspace.States[playerName].Occupied
-                        occupied.CanPunch.Value = false
-
-                        wait(reactionTime)
-                        
-                        clientRoot.CFrame = clientRoot.CFrame + dodgeDirection
-                        
-                        occupied.CanPunch.Value = true
-
-                        fireRemoteEvent(currentDirection)
+                        if not occupied.Punching.Value and not occupied.Blocking.Value and not occupied.Parrying.Value then
+                            task.wait(reactionTime)
+                            fireRemoteEvent(dodgeDirection)
+                        end
                     end
                 end)
             end
         end
 
-        shared.BaseEffectFunction = shared.BaseEffectFunction or {}
-        for i, v in pairs(Effect) do
-            shared.BaseEffectFunction[i] = shared.BaseEffectFunction[i] or v
-            Effect[i] = function(d, ...)
-                if not isFHeld and autoDodgeEnabled and not isStunned then
-                    task.spawn(function()
-                        if type(d) == "table" and typeof(d[2]) == "Instance" then
-                            local attacker = d[2]
-                            
-                            if not isLocalPlayer(attacker) then
-                                local attackerRoot = getRoot(attacker)
-                                local clientRoot = getRoot(Client.Character)
+        local function onEffectFunction(self, name, args)
+            if name == "Punch" and args[1] then
+                local chr = args[1]
+                local root = getRoot(chr)
+                local clientRoot = getRoot(Client.Character)
 
-                                if attackerRoot and clientRoot then
-                                    local distance = (attackerRoot.Position - clientRoot.Position).Magnitude
-                                    local dodgeDist, reactionTime
+                if root and clientRoot and root ~= clientRoot and root.Position then
+                    local dist = (clientRoot.Position - root.Position).magnitude
 
-                                    if distance <= detectDistance then
-                                        if distance <= 1 then
-                                            dodgeDist = 2.0
-                                            reactionTime = Options["ReactionTime1 stud"].Value
-                                        elseif distance <= 2 then
-                                            dodgeDist = 2.0
-                                            reactionTime = Options["ReactionTime2 stud"].Value
-                                        elseif distance <= 3 then
-                                            dodgeDist = 2.0
-                                            reactionTime = Options["ReactionTime3 stud"].Value
-                                        elseif distance <= 4 then
-                                            dodgeDist = 2.0
-                                            reactionTime = Options["ReactionTime4 stud"].Value
-                                        elseif distance <= 5 then
-                                            dodgeDist = 2.0
-                                            reactionTime = Options["ReactionTime5 stud"].Value
-                                        else
-                                            dodgeDist = 2.2
-                                            reactionTime = Options["ReactionTimeFarther"].Value
-                                        end
-
-                                        if distance <= 10 and (d[1] == "AttackTrail" or d[1] == "StartupHighlight" or d[1] == "UltimateHighlight") then
-                                            handlePunch(attackerRoot, clientRoot, dodgeDist, reactionTime)
-                                            wait(dodgeCooldown)  -- Pause for dodge cooldown
-                                        end
-                                    end
-                                end
-                            end
+                    if dist <= detectDistance then
+                        local reactionTime = 0.05
+                        if dist < 1 then
+                            reactionTime = Options["ReactionTime1 stud"].Value
+                        elseif dist < 2 then
+                            reactionTime = Options["ReactionTime2 stud"].Value
+                        elseif dist < 3 then
+                            reactionTime = Options["ReactionTime3 stud"].Value
+                        elseif dist < 4 then
+                            reactionTime = Options["ReactionTime4 stud"].Value
+                        elseif dist < 5 then
+                            reactionTime = Options["ReactionTime5 stud"].Value
+                        else
+                            reactionTime = Options["ReactionTimeFarther"].Value
                         end
-                    end)
+
+                        handlePunch(root, clientRoot, 3, reactionTime)
+                    end
                 end
-                return shared.BaseEffectFunction[i](d, ...)
+            end
+
+            return shared.BaseEffectFunction[name](self, name, args)
+        end
+
+        shared.BaseEffectFunction = {}
+        for i, v in pairs(Effect) do
+            shared.BaseEffectFunction[i] = v
+            Effect[i] = function(...)
+                return onEffectFunction(...)
             end
         end
 
         table.insert(connections, UserInputService.InputBegan:Connect(function(input)
             if input.KeyCode == Enum.KeyCode.F then
                 isFHeld = true
+            end
+        end))
+
+        table.insert(connections, game:GetService("RunService").Heartbeat:Connect(function()
+            if isFHeld then
+                isFHeld = false
+                local chr = Client.Character
+                if chr and chr:FindFirstChild("HumanoidRootPart") then
+                    fireRemoteEvent(chr.HumanoidRootPart.CFrame.LookVector)
+                end
             end
         end))
 
@@ -285,7 +361,6 @@ local function rejoinGame()
     local Players = game:GetService("Players")
     local function onPlayerRemoving(player)
         if player == Players.LocalPlayer then
-            -- Wait for a bit before attempting to rejoin
             task.wait(5)
             print("Rejoining game...")
             game:GetService("TeleportService"):Teleport(game.PlaceId, Players.LocalPlayer)
@@ -337,7 +412,7 @@ local dodgeMethodOptions = {"Left", "Right", "Forward", "Backward", "Automatic"}
 local DodgeMethodDropdown = Tabs["Auto Dodge Legit"]:AddDropdown("Dodge Method", {
     Title = "Dodge Method",
     Values = dodgeMethodOptions,
-    Default = "Automatic",  -- Set default to "Automatic"
+    Default = "Automatic",
     Multi = false,
     Callback = function(Value)
         currentDirection = Value
@@ -454,4 +529,3 @@ SaveManager:LoadAutoloadConfig()
 if autoDodgeEnabled then
     autoDodgeScript()
 end
-
